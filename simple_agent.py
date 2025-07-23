@@ -2,6 +2,7 @@ from langchain_huggingface import HuggingFacePipeline, ChatHuggingFace
 from langchain.tools import Tool
 from transformers import pipeline
 from langgraph.prebuilt import create_react_agent
+import json
 import re
 
 # funnily enough, the tools are too simple for modern LLMs
@@ -27,6 +28,14 @@ def upper_case_tool(text: str) -> str:
     """Tool to convert text to uppercase"""
     return text.upper()
 
+def json_tool(json_string: str) -> str:
+    """Tool to create a JSON string from an input string"""
+    try:
+        j = {"tool_call_id": "123", "result": json_string}
+        return json.dumps(j)
+    except Exception as e:
+        return f"Error parsing JSON: {str(e)}"
+
 # Define tools
 tools = [
     Tool(
@@ -43,6 +52,11 @@ tools = [
         name="UpperCase",
         func=upper_case_tool,
         description="Useful for converting text to uppercase. Input should be the text you want to convert."
+    ),
+    Tool(
+        name="JSON",
+        func=json_tool,
+        description="Useful for creating or formatting JSON. If input is valid JSON, it will be reformatted. If input is a plain string, it will be wrapped in a JSON object with 'value' key."
     )
 ]
 
@@ -88,9 +102,12 @@ You have access to the following tools:
 - Calculator: For mathematical calculations
 - TextAnalyzer: For analyzing text length (character and word count)
 - UpperCase: For converting text to uppercase
+- JSON: For creating a JSON string from an input string
 
+If asked to create a JSON, use the JSON tool, do not consider the format of the string.
 When you need to use a tool, think about which tool would be most appropriate and use it.
-When you invoke a tool, give the user the result of the tool call, without modifying it.
+When you invoke a tool, give the user the EXACT result of the tool call. Do NOT modify, interpret, or reformat the tool output. Show the raw result exactly as returned by the tool.
+For JSON tool outputs specifically: Display the exact JSON string returned by the tool without any additional formatting or interpretation.
 Always provide a clear and helpful final answer to the user's question."""
 
 # Create the agent using the new langgraph approach
@@ -146,4 +163,5 @@ def run_agent():
             print("Please try again.")
 
 if __name__ == "__main__":
+    print(json_tool('{"name": "John", "age": 30}'))
     run_agent() 
